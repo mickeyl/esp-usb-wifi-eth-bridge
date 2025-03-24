@@ -1,0 +1,8 @@
+.DS_Store
+.pio
+project.xcworkspace
+xcuserdata
+*-backups
+build
+managed_components
+*.log
