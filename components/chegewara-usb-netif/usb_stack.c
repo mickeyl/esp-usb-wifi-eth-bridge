@@ -34,6 +34,7 @@ extern esp_netif_t *usb_netif_p;
  */
 static esp_err_t netif_recv_callback(void *buffer, uint16_t len, void *ctx)
 {
+    ESP_LOGD(TAG, "netif_recv_callback: %d", len);
     if (usb_netif_p)
     {
         void *buf_copy = malloc(len);
@@ -98,11 +99,13 @@ esp_netif_t *usb_ip_init_default_config()
     ESP_ERROR_CHECK(init_tinyusb(NULL));
     ESP_ERROR_CHECK(usb_net_create(NULL));
     esp_netif_t* netif = netif_create(NULL, NULL, NULL);
-    esp_netif_action_start(netif, 0, 0, 0);
     
     uint8_t s_sta_mac[6] = {};
     ESP_ERROR_CHECK(esp_read_mac(s_sta_mac, ESP_MAC_ETH));
     ESP_ERROR_CHECK(esp_netif_set_mac(netif, s_sta_mac));
+
+    esp_netif_action_start(netif, 0, 0, 0);
+    //esp_netif_action_connected(netif, 0, 0, 0);
 
     return netif;
 }

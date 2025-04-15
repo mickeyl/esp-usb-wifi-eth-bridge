@@ -33,6 +33,7 @@ esp_netif_t *usb_netif_p = NULL;
  */
 static esp_err_t netif_transmit(void *h, void *buffer, size_t len)
 {
+    ESP_LOGD(TAG, "netif_transmit: %d", len);
     if (tinyusb_net_send_sync(buffer, len, NULL, pdMS_TO_TICKS(100)) != ESP_OK)
     {
         ESP_LOGE(TAG, "Failed to send buffer to USB!");
@@ -47,25 +48,20 @@ static esp_err_t netif_transmit(void *h, void *buffer, size_t len)
  */
 static void l2_free(void *h, void *buffer)
 {
+    ESP_LOGD(TAG, "l2_free");
     free(buffer);
 }
 
 esp_netif_t *netif_create(const esp_netif_inherent_config_t *base, const esp_netif_driver_ifconfig_t *driver, const esp_netif_netstack_config_t *stack)
 {
-    esp_netif_ip_info_t _netif_usb_ip = {};
-
-    _netif_usb_ip.ip.addr = esp_ip4addr_aton(CONFIG_USB_NETIF_DEFAULT_IP);
-    _netif_usb_ip.gw.addr = esp_ip4addr_aton(CONFIG_USB_NETIF_DEFAULT_GATEWAY);
-    _netif_usb_ip.netmask.addr = esp_ip4addr_aton(CONFIG_USB_NETIF_DEFAULT_NETMASK);
-
-    // Definition of
     // 1) Derive the base config (very similar to IDF's default WiFi AP with DHCP server)
     esp_netif_inherent_config_t base_cfg = {
-        .flags = 0, //ESP_NETIF_FLAG_AUTOUP,
+        .flags = ESP_NETIF_FLAG_AUTOUP,
         .ip_info = NULL,
         .if_key = CONFIG_USB_NETIF_IF_KEY,                                  // Set mame, key, priority
         .if_desc = "usb ncm config device",
-        .route_prio = 30};
+        .route_prio = 30
+    };
     // 2) Use static config for driver's config pointing only to static transmit and free functions
     esp_netif_driver_ifconfig_t driver_cfg = {
         .handle = (void *)1,             // not using an instance, USB-NCM is a static singleton (must be != NULL)
@@ -76,7 +72,9 @@ esp_netif_t *netif_create(const esp_netif_inherent_config_t *base, const esp_net
     struct esp_netif_netstack_config lwip_netif_config = {
         .lwip = {
             .init_fn = ethernetif_init,
-            .input_fn = ethernetif_input}};
+            .input_fn = ethernetif_input
+        }
+    };
 
     esp_netif_config_t cfg = {
         .base = &base_cfg,
