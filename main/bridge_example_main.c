@@ -25,6 +25,9 @@
 
 #include "usb_netif.h"
 
+#define BRIDGE_USB
+//#undef BRIDGE_USB
+
 static const char *TAG = "eth_bridge_example";
 
 /** Event handler for Ethernet events */
@@ -148,7 +151,7 @@ void app_main(void)
     }
     uint8_t br_ports = eth_port_cnt;
 
-#if CONFIG_EXAMPLE_BR_WIFI
+#ifdef CONFIG_EXAMPLE_BR_WIFI
     example_wifi_init();
     esp_netif_inherent_config_t esp_netif_config_wifi = ESP_NETIF_INHERENT_DEFAULT_WIFI_AP();
     esp_netif_config_wifi.flags = ESP_NETIF_FLAG_AUTOUP; // esp-netif flags need to be zero when port's to be bridged except for AP's ESP_NETIF_FLAG_AUTOUP
@@ -158,9 +161,11 @@ void app_main(void)
     br_ports++;
 #endif
 
+#ifdef BRIDGE_USB
     // Start USB netif
     esp_netif_t *usb_netif = usb_ip_init_default_config();
     br_ports++;
+#endif
 
     // Create instance of esp-netif for bridge interface
 #if CONFIG_EXAMPLE_BR_DHCPS
@@ -176,7 +181,7 @@ void app_main(void)
     bridgeif_config_t bridgeif_config = {
         .max_fdb_dyn_entries = 10, // maximum number of address entries in dynamic forwarding database
         .max_fdb_sta_entries = 2,  // maximum number of address entries in static forwarding database
-        .max_ports = br_ports      // maximum number of ports the bridge can consist of
+        .max_ports = br_ports     // maximum number of ports the bridge can consist of
     };
     esp_netif_br_config.bridge_info = &bridgeif_config;
     // Set MAC address of bridge interface the same as the Ethernet interface
@@ -185,16 +190,21 @@ void app_main(void)
 
     // Create new esp netif bridge glue instance
     esp_netif_br_glue_handle_t netif_br_glue = esp_netif_br_glue_new();
+
+#ifdef BRIDGE_USB
+    // Add USB port interface to that esp netif bridge glue instance
+    ESP_ERROR_CHECK(esp_netif_br_glue_add_port(netif_br_glue, usb_netif));
+#endif
+
     // Add Ethernet port interfaces to that esp netif bridge glue instance
     for (int i = 0; i < eth_port_cnt; i++) {
         ESP_ERROR_CHECK(esp_netif_br_glue_add_port(netif_br_glue, eth_netifs[i]));
     }
+
+
 #if CONFIG_EXAMPLE_BR_WIFI
     ESP_ERROR_CHECK(esp_netif_br_glue_add_wifi_port(netif_br_glue, wifi_netif));
 #endif // CONFIG_EXAMPLE_BR_WIFI
-
-    // Add USB port interface to that esp netif bridge glue instance
-    ESP_ERROR_CHECK(esp_netif_br_glue_add_port(netif_br_glue, usb_netif));
 
     // Attach esp netif bridge glue instance with added ports to bridge netif
     ESP_ERROR_CHECK(esp_netif_attach(br_netif, netif_br_glue));
@@ -212,6 +222,10 @@ void app_main(void)
     }
 #if CONFIG_EXAMPLE_BR_WIFI
     ESP_ERROR_CHECK(esp_wifi_start());
+#endif
+
+#ifdef BRIDGE_USB
+    esp_netif_action_connected(usb_netif, 0, 0, 0);
 #endif
 
     // --- Initialize Console ---
