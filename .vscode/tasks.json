@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build",
+        "type": "shell",
+        "command": "idf.py build",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+          "panel": "shared",
+          "showReuseMessage": false
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Build, Flash & Monitor",
+        "type": "shell",
+        "command": "idf.py build flash -p /dev/ttyACM0",
+        "group": "test",
+        "presentation": {
+          "reveal": "always",
+          "panel": "shared",
+          "showReuseMessage": false
+        },
+        "problemMatcher": []
+      }
+    ]
+  }

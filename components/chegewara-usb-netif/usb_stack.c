@@ -105,7 +105,6 @@ esp_netif_t *usb_ip_init_default_config()
     ESP_ERROR_CHECK(esp_netif_set_mac(netif, s_sta_mac));
 
     esp_netif_action_start(netif, 0, 0, 0);
-    //esp_netif_action_connected(netif, 0, 0, 0);
 
     return netif;
 }

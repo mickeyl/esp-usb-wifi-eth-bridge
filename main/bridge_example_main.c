@@ -38,24 +38,26 @@ static void eth_event_handler(void *arg, esp_event_base_t event_base,
     /* we can get the ethernet driver handle from event data */
     esp_eth_handle_t eth_handle = *(esp_eth_handle_t *)event_data;
 
-    switch (event_id) {
-    case ETHERNET_EVENT_CONNECTED:
-        esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
-        ESP_LOGI(TAG, "Ethernet (%p) Link Up", eth_handle);
-        ESP_LOGI(TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
-                 mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-        break;
-    case ETHERNET_EVENT_DISCONNECTED:
-        ESP_LOGI(TAG, "Ethernet (%p) Link Down", eth_handle);
-        break;
-    case ETHERNET_EVENT_START:
-        ESP_LOGI(TAG, "Ethernet (%p) Started", eth_handle);
-        break;
-    case ETHERNET_EVENT_STOP:
-        ESP_LOGI(TAG, "Ethernet (%p) Stopped", eth_handle);
-        break;
-    default:
-        break;
+    if (eth_handle != (void *)1) {
+        switch (event_id) {
+        case ETHERNET_EVENT_CONNECTED:
+            esp_eth_ioctl(eth_handle, ETH_CMD_G_MAC_ADDR, mac_addr);
+            ESP_LOGI(TAG, "Ethernet (%p) Link Up", eth_handle);
+            ESP_LOGI(TAG, "Ethernet HW Addr %02x:%02x:%02x:%02x:%02x:%02x",
+                    mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+            break;
+        case ETHERNET_EVENT_DISCONNECTED:
+            ESP_LOGI(TAG, "Ethernet (%p) Link Down", eth_handle);
+            break;
+        case ETHERNET_EVENT_START:
+            ESP_LOGI(TAG, "Ethernet (%p) Started", eth_handle);
+            break;
+        case ETHERNET_EVENT_STOP:
+            ESP_LOGI(TAG, "Ethernet (%p) Stopped", eth_handle);
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -225,7 +227,10 @@ void app_main(void)
 #endif
 
 #ifdef BRIDGE_USB
-    esp_netif_action_connected(usb_netif, 0, 0, 0);
+    //esp_netif_action_connected(usb_netif, 0, 0, 0);
+    // very ugly hack to br_glue add the inteface into a bridge
+    void *handle = (void *)1; // see components/chegewara-usb-netif/usb_netif_ncm.c (line 67)
+    esp_event_post(ETH_EVENT, ETHERNET_EVENT_START, &handle, sizeof(handle), 0); // see components/esp_netif/lwip/esp_netif_br_glue.c (line 107-116)
 #endif
 
     // --- Initialize Console ---
